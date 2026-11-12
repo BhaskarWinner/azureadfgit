@@ -1,0 +1,67 @@
+{
+	"name": "dataflow2",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "Datasource2",
+						"type": "DatasetReference"
+					},
+					"name": "source1"
+				},
+				{
+					"dataset": {
+						"referenceName": "Datasource1",
+						"type": "DatasetReference"
+					},
+					"name": "source2"
+				}
+			],
+			"sinks": [],
+			"transformations": [
+				{
+					"name": "split1"
+				},
+				{
+					"name": "exists1"
+				},
+				{
+					"name": "union1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          EMPNO as string,",
+				"          ENAME as string,",
+				"          JOB as string,",
+				"          MGR as string,",
+				"          HIREDATE as timestamp 'dd/MM/yyyy',",
+				"          SAL as string,",
+				"          COMM as string,",
+				"          DEPTNO as integer '##0'",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> source1",
+				"source(output(",
+				"          DEPTNO as integer '##0',",
+				"          DNAME as string,",
+				"          LOC as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> source2",
+				"exists1 split(DEPTNO==10,",
+				"     DEPTNO==20,",
+				"     DEPTNO==30,",
+				"     disjoint: false) ~> split1@(Dep10, Dep20, Dep30)",
+				"source1, source2 exists(source1@DEPTNO == source2@DEPTNO,",
+				"     negate:false,",
+				"     broadcast: 'auto')~> exists1",
+				"split1@Dep10, split1@Dep20, split1@Dep30 union(byName: true)~> union1"
+			]
+		}
+	}
+}
